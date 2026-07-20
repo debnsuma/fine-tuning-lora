@@ -1,4 +1,4 @@
-# Fine-Tune a PII Redaction Engine on Crusoe
+# Fine-Tune a PII Redaction Engine on Crusoe Serverless Fine-Tuning
 
 An end-to-end walkthrough of [Crusoe Serverless Fine-Tuning](https://docs.crusoecloud.com/serverless-fine-tuning/overview) and [Self-Serve Deployments](https://docs.crusoecloud.com/self-serve-deployments/overview): fine-tune [Qwen3 8B](https://huggingface.co/Qwen/Qwen3-8B) to find and mask personally identifiable information in financial documents, deploy it as a dedicated endpoint, and evaluate it against a general-purpose 70B model. 
 
