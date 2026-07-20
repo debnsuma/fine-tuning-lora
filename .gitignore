@@ -1,0 +1,28 @@
+# Secrets, never commit credentials
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Fine-tuning artifacts (downloaded adapters, checkpoints)
+outputs/
+*.safetensors
+checkpoint-*.zip
+ftmodel-*.zip
+
+# OS / editor noise
+.DS_Store
+.idea/
+.vscode/
+
+# Generated training data (contains synthetic fake API keys that trip secret scanners)
+data/*.jsonl
