@@ -32,6 +32,7 @@ The notebook walks you through the rest, covering:
 3. **Deploy**: turn the best checkpoint into a dedicated endpoint with a few clicks in the Crusoe Console
 4. **Run inference**: redact documents through the OpenAI-compatible API, with and without streaming
 5. **Evaluate**: score the fine-tuned model against a general-purpose 70B baseline on entity-level F1
+6. **Clean up**: delete the dedicated deployment and the uploaded dataset files so nothing keeps billing after you close the notebook
 
 ## Links
 

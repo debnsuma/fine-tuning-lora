@@ -16,9 +16,9 @@ A hands-on path into LLM fine-tuning: what quantization and LoRA actually do, bu
 
 Work through `01-into-lora-fine-tuning` first if the mechanics of LoRA and quantization are new to you, then move to `02-serverless-fine-tuning-pii-redaction` to see the same ideas run, at scale, on a fully managed service.
 
-## Getting a GPU VM on Crusoe Cloud
+## Getting a VM (with `GPU`) on Crusoe Cloud
 
-`01_quantization.ipynb` in `01-into-lora-fine-tuning` needs an NVIDIA GPU throughout (anything using [bitsandbytes](https://huggingface.co/docs/bitsandbytes/main/en/index) is CUDA only), and `02_lora_and_qlora.ipynb` needs one partway through, once it moves from from-scratch LoRA into the QLoRA section. If you do not already have a GPU machine, Crusoe Cloud is the fastest way to get one.
+ If you do not already have a GPU machine, you may like to use Crusoe Cloud and sping up a VM with the GPU of your choice.
 
 1. Log in to the [Crusoe Console](https://console.crusoecloud.com/).
 2. Go to **Compute -> Instances -> Create Instance** ([Creating a VM docs](https://docs.crusoecloud.com/quickstart/creating-a-vm/index.html)).
@@ -35,29 +35,29 @@ ssh ubuntu@<PUBLIC_IP>
 
 ## Setting up the shared environment
 
-Every notebook in this repository, in both folders, runs on one shared virtual environment created at the repo root with [uv](https://docs.astral.sh/uv/). There is no separate environment per folder, and the same commands make the environment discoverable as a Jupyter kernel from VS Code (Command Palette -> **Remote-SSH: Connect to Host**, then open the `fine-tuning-lora` folder).
+Every notebook in this repository, runs on one shared virtual environment created at the repo root with [uv](https://docs.astral.sh/uv/). 
 
 ```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh   # skip if uv is already installed
-source ~/.bashrc                                  # reload PATH, or open a new shell
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh  
+sudo apt-get update && sudo apt-get install -y python3.12-dev
+source ~/.bashrc 
 
+
+# Clone the repo
 git clone https://github.com/debnsuma/fine-tuning-lora.git
 cd fine-tuning-lora
 
-# Python.h header, needed for PyTorch's Triton JIT to compile CUDA kernels at runtime
-sudo apt-get update && sudo apt-get install -y python3.12-dev
-
+# Create the virtual env
 uv venv --python 3.12
 uv pip install -r requirements.txt
 
 .venv/bin/python -m ipykernel install --user --name fine-tuning-lora --display-name "fine-tuning-lora (.venv)"
 ```
 
-`requirements.txt` at the repo root is the union of what both folders need. VS Code's Python and Jupyter extensions auto-detect `.venv/` at the workspace root as an interpreter, and the kernel registered above shows up in the notebook kernel picker as **fine-tuning-lora (.venv)** no matter which subfolder a notebook lives in.
-
 ## Foundations
 
-[`01-into-lora-fine-tuning`](./01-into-lora-fine-tuning/) builds quantization, LoRA, and QLoRA up from first principles in plain PyTorch, before reaching for any library:
+[The first section](./01-into-lora-fine-tuning/) builds quantization, LoRA, and QLoRA up from first principles in plain PyTorch, before reaching for any library:
 
 ```bash
 cd 01-into-lora-fine-tuning
@@ -68,7 +68,11 @@ No API key needed, only a GPU as noted above. See [its README](./01-into-lora-fi
 
 ## Serverless Fine-Tuning with Crusoe
 
-[`02-serverless-fine-tuning-pii-redaction`](./02-serverless-fine-tuning-pii-redaction/) is an end-to-end walkthrough of [Crusoe Serverless Fine-Tuning](https://docs.crusoecloud.com/serverless-fine-tuning/overview) and [Self-Serve Deployments](https://docs.crusoecloud.com/self-serve-deployments/overview): fine-tune [Qwen3 8B](https://huggingface.co/Qwen/Qwen3-8B) to find and mask personally identifiable information in financial documents, deploy it as a dedicated endpoint, and evaluate it against a general-purpose 70B model.
+[In this section](./02-serverless-fine-tuning-pii-redaction/) we will go over the end-to-end walkthrough of [Crusoe Serverless Fine-Tuning](https://docs.crusoecloud.com/serverless-fine-tuning/overview) and [Self-Serve Deployments](https://docs.crusoecloud.com/self-serve-deployments/overview) by:
+
+- Fine-tuning a [Qwen3 8B](https://huggingface.co/Qwen/Qwen3-8B) to find and mask personally identifiable information in financial documents
+- Then deploying it as a dedicated endpoint, and 
+- Finally, evaluate it against a general-purpose 70B model.
 
 The recipe is model agnostic, you can swap the base model with any other [supported model](https://www.crusoe.ai/cloud/serverless-fine-tuning) in the fine-tuning registry and everything else stays the same. PII redaction is exactly the workload you cannot send to a third-party model API, because the input is the sensitive data itself, fine-tuning and serving the model inside your own cloud environment is the point, not an implementation detail.
 
@@ -80,16 +84,17 @@ This needs a Crusoe Inference API key:
 
 ```bash
 cd 02-serverless-fine-tuning-pii-redaction
-cp .env.example .env          # then paste your key into CRUSOE_API_KEY
+cp .env.example .env          # add your [CRUSOE_API_KEY]
 ../.venv/bin/jupyter lab finetune-deploy-inference.ipynb
 ```
 
 The notebook walks through:
 
-1. **Prepare the data**: download a dataset from Hugging Face and convert it to chat-format JSONL
+1. **Prepare the data**: download a dataset from Hugging Face, convert it to chat-format JSONL, and validate it before upload
 2. **Fine-tune**: launch a LoRA job on Crusoe Serverless Fine-Tuning, billed per training token
 3. **Deploy**: turn the checkpoint into a dedicated endpoint with a few clicks in the Crusoe Console
 4. **Run inference and evaluate**: call your model through the OpenAI-compatible API and score it against a baseline
+5. **Clean up**: delete the dedicated deployment and the uploaded dataset files so nothing keeps billing after you close the notebook
 
 ### Dataset format reference
 
@@ -98,13 +103,6 @@ Every supervised fine-tuning job takes data in the chat format (JSONL):
 ```jsonl
 {"messages": [{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "What is LoRA?"}, {"role": "assistant", "content": "LoRA (Low-Rank Adaptation) is a parameter-efficient fine-tuning technique..."}]}
 ```
-
-Rules:
-
-- Each line is a complete JSON object (not a JSON array)
-- `messages` is required; a `system` turn is optional but recommended
-- Only `assistant` turns are included in the loss; `user` turns are masked
-- Minimum 10 examples; 100 to 1000 high-quality examples is a practical target
 
 ### Links
 
