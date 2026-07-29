@@ -10,9 +10,19 @@ PII redaction is exactly the workload you cannot send to a third-party model API
 
 ## Quickstart
 
+### Get a Crusoe Inference API key
+
+1. Log in to the [Crusoe Console](https://console.crusoecloud.com/).
+2. Go to **Organization settings -> Security -> [Inference API keys](https://console.crusoecloud.com/security/inference-api-keys)**.
+3. Create a key and copy it.
+
+### Configure and install
+
+This notebook shares the single virtual environment for the whole repository (no GPU needed here, everything runs against Crusoe's managed API). See the root [README](../README.md) for setting up the shared environment with `uv`. Once that is done:
+
 ```bash
-cp .env.example .env   # then fill in CRUSOE_API_KEY
-uv venv && uv pip install -r requirements.txt
+cp .env.example .env          # then paste your key into CRUSOE_API_KEY
+../.venv/bin/jupyter lab finetune-deploy-inference.ipynb
 ```
 
 The notebook walks you through the rest, covering:
